@@ -5,13 +5,14 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
 	"regexp"
 	"time"
+
+	"gopkg.in/yaml.v2"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/log"
@@ -140,9 +141,16 @@ func scriptRunHandler(w http.ResponseWriter, r *http.Request, config *Config) {
 
 	measurements := runScripts(scripts)
 
+	fmt.Fprint(w, "# HELP script_success Whether the script returned with success or not\n")
+	fmt.Fprint(w, "# TYPE script_success gauge\n")
+	for _, measurement := range measurements {
+		fmt.Fprintf(w, "script_success{script=\"%s\"} %d\n", measurement.Script.Name, measurement.Success)
+	}
+
+	fmt.Fprint(w, "# HELP script_duration_seconds How long dit it take the script to succeed\n")
+	fmt.Fprint(w, "# TYPE script_duration_seconds summary\n")
 	for _, measurement := range measurements {
 		fmt.Fprintf(w, "script_duration_seconds{script=\"%s\"} %f\n", measurement.Script.Name, measurement.Duration)
-		fmt.Fprintf(w, "script_success{script=\"%s\"} %d\n", measurement.Script.Name, measurement.Success)
 	}
 }
 
